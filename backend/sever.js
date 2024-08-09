@@ -4,21 +4,24 @@ import cors from "cors";
 import mongoose from "mongoose";
 import session from "express-session";
 import Cookies from "js-cookie";
+import axios from "axios";
 
 import { User } from "../models/user.js";
 import { Subject } from "../models/subject.js";
 import { SubTopic } from "../models/subtopic.js";
+import { SuggestedTopic } from "../models/sugTopic.js";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import axios from "axios";
-import { useRouteLoaderData } from "react-router-dom";
 import dotenv from "dotenv";
 dotenv.config();
 
+// Gemini Api endpoint
+import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-console.log(process.env.GEMINI_API_KEY);
+
+//Mongoose cnnect funtion
 let connection = await mongoose.connect(process.env.MONGO_URL);
 
+//Cors prefrences
 const corsOptions = {
   origin: "http://localhost:5173", // Allow requests from this origin
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
@@ -33,6 +36,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
+//Initializing sessions
 app.use(
   session({
     secret: "krunal1234",
@@ -41,6 +45,14 @@ app.use(
     cookie: { maxAge: 86400000, secure: false },
   })
 );
+
+app.get("/auth/check-session", (req, res) => {
+  if (req.session.userData) {
+    res.status(200).json({ user: req.session.userData });
+  } else {
+    res.status(401).json({ message: "Not authenticated" });
+  }
+});
 
 app.post("/login", async (req, res) => {
   const email = req.body.userEmail;
@@ -60,14 +72,6 @@ app.post("/login", async (req, res) => {
     req.session.userData = user;
     Cookies.set("userCookie", "user", { expires: 29 });
     return res.status(200).json({ user });
-  }
-});
-
-app.get("/auth/check-session", (req, res) => {
-  if (req.session.userData) {
-    res.status(200).json({ user: req.session.userData });
-  } else {
-    res.status(401).json({ message: "Not authenticated" });
   }
 });
 
@@ -97,12 +101,18 @@ app.post("/signup", (req, res) => {
 
 app.post("/chatbot", (req, res) => {
   const prompt = req.body.input;
+  const content = req.body.content;
+
   async function run() {
     // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const chat = model.startChat({ history: [] });
+    console.log(req.body.content);
+
     const result1 = await chat.sendMessage(
-      'you are a teacher and a student is asking you question related to study only answer if the uestion is related to study otherwise say "I cant answer that" and if you answer only in paragraph and shortest form possible no * included Ouestion : ' +
+      'you are a teacher and a student is asking you question related to study only answer if the question is related to study otherwise say "I cant answer that" and if you answer only in paragraph and shortest form possible no * included. and you have to answer in refrence to ' +
+        req.body.content +
+        " ignore the tags of html. Ouestion : " +
         prompt
     );
     console.log(result1.response.text());
@@ -132,68 +142,74 @@ app.post("/opted", async (req, res) => {
 app.post("/setoption", async (req, res) => {
   const user = req.body.user;
   let topics = [];
+
   async function run() {
     // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const chat = model.startChat({ history: [] });
-    const result1 = await chat.sendMessage(
-      `give an array of around 10-12 topics related to ${req.body.option} in subject ${req.body.subject}. the response should be array. no other text should be in the response.response should be without any "\n" or any text. ex : ["example topic"]  `
+
+    const resultSpell = await chat.sendMessage(
+      `check the spelling of word ${req.body.option} if its wrong then return the right word in [] and if its correct then return as it is in [] and make first letter capital.`
     );
-    const inputString = result1.response.text();
-    const startIndex = inputString.indexOf("[");
-    const endIndex = inputString.indexOf("]");
-    const result = inputString.substring(startIndex, endIndex + 1);
-    topics = JSON.parse(result);
-    console.log(topics);
-    try {
-      const response = await User.updateOne(
-        { email: user },
-        {
-          $push: {
-            subtopic: {
-              name: req.body.option,
-              subject: req.body.subject,
-              level: "beginner",
-              smallTopics: topics,
+    const ins = resultSpell.response.text();
+    const sIndex = ins.indexOf("[");
+    const eIndex = ins.indexOf("]");
+    const spelledTopic = ins.substring(sIndex + 1, eIndex);
+    console.log(spelledTopic);
+
+    const result0 = await chat.sendMessage(
+      ` check if ${spelledTopic}} belongs to subject ${req.body.subject} or not. if belongs then give response [1] and if not then [0] `
+    );
+    const inputString0 = result0.response.text();
+    const startIndex0 = inputString0.indexOf("[");
+    const endIndex0 = inputString0.indexOf("]");
+    const result_zero = inputString0.substring(startIndex0 + 1, endIndex0);
+
+    if (result_zero == 1) {
+      const result1 = await chat.sendMessage(
+        `give an array of around 10-12 topics related to ${spelledTopic} in subject ${req.body.subject}. the response should be array. no other text should be in the response.response should be without any "\n" or any text. ex : ["example topic"]  `
+      );
+      const inputString = result1.response.text();
+      const startIndex = inputString.indexOf("[");
+      const endIndex = inputString.indexOf("]");
+      const result = inputString.substring(startIndex, endIndex + 1);
+      topics = JSON.parse(result);
+      try {
+        const response = await User.updateOne(
+          { email: user },
+          {
+            $push: {
+              subtopic: {
+                name: spelledTopic,
+                progress: 0,
+                subject: req.body.subject,
+                level: "beginner",
+                smallTopics: topics,
+              },
             },
           },
-        },
-        { new: true }
-      );
-      console.log(response);
-      res.status(200);
-    } catch (err) {
-      console.log(err);
-      res.status(400);
+          { new: true }
+        );
+        res.send("1");
+      } catch (err) {
+        res.send("0");
+      }
+    } else {
+      res.send("0");
     }
   }
   run();
 });
-app.get("/Maths", async (req, res) => {
-  const response = await SubTopic.find({ subject: "Maths" });
-  res.send(response);
-});
-app.get("/Science", async (req, res) => {
-  const response = await SubTopic.find({ subject: "Science" });
-  res.send(response);
-});
-app.get("/History", async (req, res) => {
-  const response = await SubTopic.find({ subject: "History" });
-  res.send(response);
-});
-app.get("/English", async (req, res) => {
-  const response = await SubTopic.find({ subject: "English" });
-  res.send(response);
-});
-app.get("/Hindi", async (req, res) => {
-  const response = await SubTopic.find({ subject: "Hindi" });
-  res.send(response);
-});
-app.get("/Gujarati", async (req, res) => {
-  const response = await SubTopic.find({ subject: "Gujarati" });
+
+app.post("/subject", async (req, res) => {
+  const response = await SubTopic.find({
+    subject: req.body.subject,
+    level: req.body.level,
+  });
   res.send(response);
 });
 
+//Route for fetching Youtube links
 app.post("/yt", async (req, res) => {
   const apiKey = process.env.YT_API_KEY; // Replace with your API key
   const query = `teaching ${req.body.opt}`; // Search query
@@ -266,6 +282,32 @@ app.post("/getTopic", async (req, res) => {
   res.send(topics);
 });
 
+app.post("/getsugTopic", async (req, res) => {
+  const topic = req.body.topic;
+  const subject = req.body.subject;
+  const email = req.body.user;
+  let topics = [];
+  console.log({ topic, subject, email });
+  const userData = await User.find({
+    email: email,
+    subtopic: {
+      $elemMatch: { name: topic, subject: subject },
+    },
+  });
+  if (userData[0]) {
+    for (let index = 0; index < userData[0].subtopic.length; index++) {
+      if (
+        userData[0].subtopic[index].name == topic &&
+        userData[0].subtopic[index].subject == subject
+      ) {
+        topics = userData[0].subtopic[index].sugTopic;
+      }
+    }
+  }
+  console.log(topics);
+  res.send(topics);
+});
+
 app.post("/exam", (req, res) => {
   const topic = req.body.topic;
   const level = req.body.level;
@@ -277,6 +319,8 @@ app.post("/exam", (req, res) => {
       `create an mcq test on topic ${topic}. The test should be of 10 questions. the level of exam should be ${level} level. and the response must follow the structure given here and no other text of character should be there in response other that array itself. [{question:"question of mcq",options:[option1,option2,option3,option4],correctAnswer:"correact answer"}]  ` +
         "dont add the ```json and ``` in the response"
     );
+    console.log(result1.response.text());
+
     res.send(result1.response.text());
   }
   run();
@@ -292,6 +336,7 @@ app.post("/submitExam", async (req, res) => {
     test: req.body.test,
     userAnswers: req.body.userAnswers,
     score: req.body.score,
+    smallTopic: req.body.smallTopic,
   };
   if (examData.level == "beginner" && examData.score >= 8) {
     try {
@@ -363,6 +408,7 @@ app.post("/submitExam", async (req, res) => {
             test: examData.test,
             score: examData.score,
             userAnswers: examData.userAnswers,
+            smallTopic: examData.smallTopic,
           },
         },
       },
@@ -381,8 +427,40 @@ app.post("/submitExam", async (req, res) => {
       const result1 = await chat.sendMessage(
         `you are a exam evaluater this is the exam data from user subject: ${examData.subject}, topic: ${examData.topic}, testData: ${examData.test}, users answers in order of questions; ${examData.userAnswers}, score: ${examData.score}  if user scores low marks then return a array of suggested topic user lacs in. in response only provide the array of suggested topic nothing else and if user scores good then return null array.`
       );
-      const sugTopic = result1.response.text();
+      // const sugTopic = result1.response.text();
+      const inputString0 = result1.response.text();
+      const startIndex0 = inputString0.indexOf("[");
+      const endIndex0 = inputString0.indexOf("]");
+      const sugTopic = JSON.parse(
+        inputString0.substring(startIndex0, endIndex0 + 1)
+      );
       console.log(sugTopic);
+      try {
+        const response = await User.find({ email: examData.user });
+        console.log(response);
+        for (let index = 0; index < response[0].subtopic.length; index++) {
+          if (
+            response[0].subtopic[index].name == examData.topic &&
+            response[0].subtopic[index].subject == examData.subject
+          ) {
+            response[0].subtopic[index].sugTopic = sugTopic;
+            response[0].save();
+          }
+        }
+
+        for (let i = 0; i < sugTopic.length; i++) {
+          const sugresponse = new SuggestedTopic({
+            name: sugTopic[i],
+            subtopic: examData.topic,
+            subject: examData.subject,
+            user: examData.user,
+          });
+          sugresponse.save();
+        }
+
+      } catch (err) {
+        console.log(err);
+      }
     }
     run();
   }
@@ -395,6 +473,18 @@ app.post("/getExamData", async (req, res) => {
     });
     console.log(data.exam);
     res.send(data.exam);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.post("/getExamAnalysis", async (req, res) => {
+  try {
+    const user = await User.findOne({
+      email: req.body.user,
+    });
+    console.log(user.exam);
+    res.send(user.exam);
   } catch (err) {
     console.log(err);
   }

@@ -16,6 +16,7 @@ const Dashboard = () => {
   const [progress, setprogress] = useState(null)
   const [scores, setscores] = useState(null)
   const [materials, setmaterials] = useState(null)
+  
   useEffect(() => {
     setTimeout(() => {
         setuserDetails({
@@ -42,7 +43,7 @@ const Dashboard = () => {
             { title: "History Notes", description: "Ancient to Modern" },
           ]);
     }, 1000);
-  }, [])
+  }, [user])
   
 if (!userDetails || !materials || !progress || !scores  ) {
     return <LinearProgress color="inherit" />
@@ -52,9 +53,6 @@ else{
         <Container>
           <NavBar />
           <UserProfile user={userDetails} />
-          <ProgressTracking progress={progress} />
-          <ExamScores scores={scores} />
-          <StudyMaterials materials={materials} />
         </Container>
       );
 }

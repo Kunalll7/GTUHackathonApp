@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import SideBar from "./Sidebar";
 
-const Chatbot = () => {
+const Chatbot = (props) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isSender, setIsSender] = useState(false); // Toggle to simulate sender/user
@@ -11,10 +11,12 @@ const Chatbot = () => {
     setInput(e.target.value);
   };
   const handelRes = async () => {
+    console.log("handelres workedd");
+    
     try {
       const response = await axios.post(
         "http://localhost:3000/chatbot",
-        { input },
+        { input:input, content: props.content },
         { withCredentials: true }
       );
       console.log(messages);
@@ -44,8 +46,6 @@ const Chatbot = () => {
 
   return (
     <>
-
-
       <div style={styles.container} className="bot-container">
         <div style={styles.chatWindow}>
           {messages.map((msg, index) => (

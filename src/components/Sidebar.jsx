@@ -35,6 +35,9 @@ const sideBar = () => {
 
         <div className="sideNav">
           <ul className="sideul">
+          <li>
+              <Link to={"/"} className="lnk">Home</Link>
+            </li>
             <li>
               <Link to={"/explore"} className="lnk">Explore</Link>
             </li>
@@ -44,9 +47,7 @@ const sideBar = () => {
             <li>
               <Link to={"/analysis"}>Analysis</Link>
             </li>
-            <li>
-              <Link to={"/chatbot"}>Chat Bot</Link>
-            </li>
+          
           </ul>
         </div>
         <div className="btmDrawer">

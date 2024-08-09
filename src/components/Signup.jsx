@@ -89,7 +89,7 @@ const Signup = () => {
               required
             />
           </div>
-          
+
           <div className="formGroup">
             <button type="submit" className={"button"}>
               Next
@@ -116,26 +116,6 @@ const Signup = () => {
             />
           </div>
           <div className={"formGroup"}>
-            <label className={"label"}>Education </label>
-            <br />
-            <select
-              id="cars"
-              name="cars"
-              value={education}
-              onChange={handleInputChange}
-              className={"input"}
-              required
-            >
-              <option value="" defaultValue={""} disabled hidden>
-                Education
-              </option>
-              <option value="secondarySchool">Secondry school</option>
-              <option value="highSchool">High school</option>
-              <option value="underGraduate">Under Graduate</option>
-              <option value="graduate">Graduate</option>
-            </select>
-          </div>
-          <div className={"formGroup"}>
             <label className={"label"}>Study with board?</label>
             <br />
 
@@ -152,12 +132,70 @@ const Signup = () => {
             <input
               type="radio"
               value={board}
+              onChange={(e) => setboard(false)}
               required
               name="board"
               className="radio"
             />
             <label>Normal</label>
           </div>
+          {board ? (
+            <div className={"formGroup"}>
+              <label className={"label"}>Education </label>
+              <br />
+              <select
+                id="cars"
+                name="cars"
+                value={education}
+                onChange={handleInputChange}
+                className={"input"}
+                required
+              >
+                <option value="" defaultValue={""} disabled hidden>
+                  Education
+                </option>
+                <option value="1">Std 1</option>
+                <option value="2">Std 2</option>
+                <option value="3">Std 3</option>
+                <option value="4">Std 4</option>
+                <option value="5">Std 5</option>
+                <option value="6">Std 6</option>
+                <option value="7">Std 7</option>
+                <option value="8">Std 8</option>
+                <option value="9">Std 9</option>
+                <option value="10">Std 10</option>
+                <option value="11sci">Std 11 - Science</option>
+                <option value="11com">Std 11 - Commerce</option>
+                <option value="11art">Std 11 - Arts</option>
+                <option value="12sci">Std 12 - Science</option>
+                <option value="12com">Std 12 - Commerce</option>
+                <option value="12art">Std 12 - Arts</option>
+              </select>
+            </div>
+          ) : (
+            <div className={"formGroup"}>
+              <label className={"label"}>Education </label>
+              <br />
+              <select
+                id="cars"
+                name="cars"
+                value={education}
+                onChange={handleInputChange}
+                className={"input"}
+                required
+              >
+                <option value="" defaultValue={""} disabled hidden>
+                  Education
+                </option>
+
+                <option value="Primary">Primary School</option>
+                <option value="Secondary">Secondary School</option>
+                <option value="highSchool">High School</option>
+                <option value="underGraduate">Under Graduate</option>
+                <option value="Graduate">Graduate</option>
+              </select>
+            </div>
+          )}
           <br />
           <div className="formGroup">
             <button type="submit" className={"button"}>

@@ -15,15 +15,27 @@ import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import { Link } from "react-router-dom";
 import { GoHomeFill } from "react-icons/go";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import SideBar from "./Sidebar";
+import Stepper from "@mui/material/Stepper";
+import Step from "@mui/material/Step";
+import StepLabel from "@mui/material/StepLabel";
+
 const Topic = () => {
   let navigate = useNavigate();
   const { topicSub, settopicSub } = useContext(topicContext);
   const [arrayTopic, setarrayTopic] = useState([]);
+  const [sugarrayTopic, setsugarrayTopic] = useState([]);
   const { opt, setopt } = useContext(courseContext);
   const [isloading, setisloading] = useState(true);
   const { user } = useContext(AuthContext);
+
+  const steps = [
+    "Select master blaster campaign settings",
+    "Create an ad group",
+    "Create an ad",
+  ];
   const getData = async () => {
     try {
       const response = await axios.post(
@@ -44,14 +56,35 @@ const Topic = () => {
       console.log(error);
     }
   };
+
+  const getsugData = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/getsugTopic",
+        { topic: opt.course, subject: opt.subject, user: user.email },
+        {
+          withCredentials: true,
+        }
+      );
+      for (let index = 0; index < response.data.length; index++) {
+        if (!sugarrayTopic.includes(response.data[index])) {
+          sugarrayTopic.push(response.data[index]);
+        }
+      }
+      console.log(sugarrayTopic);
+      setisloading(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   useEffect(() => {
     getData();
-
+    getsugData();
   }, []);
 
   const handelSubmit = (value) => {
     settopicSub(value);
-    navigate("/opted/topic/course")
+    navigate("/opted/topic/course");
   };
 
   return (
@@ -67,7 +100,11 @@ const Topic = () => {
           <Link className="breadLink " underline="hover" to={"/opted"}>
             Enrolled
           </Link>
-          <Link className="breadLink breadMain" underline="hover" to={"/opted/topic"}>
+          <Link
+            className="breadLink breadMain"
+            underline="hover"
+            to={"/opted/topic"}
+          >
             {opt.course}
           </Link>
         </Breadcrumbs>
@@ -79,22 +116,23 @@ const Topic = () => {
           <Skeleton variant="rounded" width={1250} height={800} />
         </div>
       ) : (
-        <>
-          <div className="home-container">
-            <h1 className="listTitle">Explore and select topics tailored to your subjects</h1>
-            <div className="listDiv">
+        <div className="home-container">
+          {/* <h1 className="listTitle">
+              Explore and select topics tailored to your subjects
+            </h1> */}
+          <div className="listDiv">
             <List className="listContainer">
               {arrayTopic.map((text, index) => (
-                <ListItem className="listItem" disablePadding>
+                <ListItem className="listItem" key={text} disablePadding>
                   <ListItemButton onClick={() => handelSubmit(text)}>
                     <ListItemText primary={text} />
+                    <CheckCircleIcon/>
                   </ListItemButton>
                 </ListItem>
               ))}
             </List>
-            </div>
           </div>
-        </>
+        </div>
       )}
     </>
   );

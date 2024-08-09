@@ -1,3 +1,4 @@
+import { Progress } from "flowbite-react";
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
@@ -12,13 +13,16 @@ const userSchema = new mongoose.Schema({
       name: String,
       subject: String,
       level: String,
-      smallTopics:[String]
+      progress:Number,
+      smallTopics:[String],
+      sugTopic:[String]
     },
   ],
   exam: [
     {
       subject: String,
       topic: String,
+      smallTopic:String,
       level: String,
       userAnswers:[String],
       test: [

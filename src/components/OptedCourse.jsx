@@ -33,8 +33,6 @@ const OptedCourse = () => {
     firstapp();
   });
 
-  
-
   return (
     <>
       <div className="container">
@@ -49,19 +47,20 @@ const OptedCourse = () => {
             Enrolled
           </Link>
         </Breadcrumbs>
-        <h1>opted</h1>
       </div>
       <div className="home-container">
-        <div className="card-container d-flex">
-          {array.map((text, index) => (
-            <SubCard
-              key={text.name}
-              subject={text.subject}
-              course={text.name}
-              level={text.level}
-              smallTopics={text.smallTopics}
-            />
-          ))}
+        <div className="body-container">
+          <div className="card-container d-flex">
+            {array.map((text, index) => (
+              <SubCard
+                key={text.name}
+                subject={text.subject}
+                course={text.name}
+                level={text.level}
+                smallTopics={text.smallTopics}
+              />
+            ))}
+          </div>
         </div>
       </div>
       ;

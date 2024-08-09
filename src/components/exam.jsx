@@ -1,25 +1,26 @@
 import React, { useState, useEffect, useContext } from "react";
-
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
-
 import { courseContext } from "../context/courseContext";
 import { AuthContext } from "../context/authcontext";
+import { examContext } from "../context/examContext";
 import axios from "axios";
+import { IoMdClose } from "react-icons/io";
 
 const MCQTest = (props) => {
+  const { giveExam, setgiveExam } = useContext(examContext);
   const { user } = useContext(AuthContext);
   const { opt, setopt } = useContext(courseContext);
   const [answers, setAnswers] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   const handleOptionChange = (questionIndex, option) => {
-    setAnswers([
-      ...answers,
-      [questionIndex]= option,
-    ]);
+    const newAnswers = [...answers];
+    newAnswers[questionIndex] = option;
+    setAnswers(newAnswers);
   };
 
   const handleSubmit = async () => {
@@ -29,9 +30,9 @@ const MCQTest = (props) => {
         newScore += 1;
       }
     });
-
     setScore(newScore);
     setSubmitted(true);
+    setShowResults(true);
     try {
       const response = await axios.post(
         "http://localhost:3000/submitExam",
@@ -43,16 +44,20 @@ const MCQTest = (props) => {
           test: props.questions,
           userAnswers: answers,
           score: newScore,
+          smallTopic: props.smallTopic,
         },
         { withCredentials: true }
       );
     } catch (error) {
       console.log(error);
     }
-    // Optionally, store the score in local storage or send to a server
     localStorage.setItem("mcqTestScore", newScore);
+    
   };
-  // questions.js
+
+  const handelBack = () => {
+    setgiveExam(false);
+  };
 
   return (
     <div className="exam-container">
@@ -72,8 +77,9 @@ const MCQTest = (props) => {
               <RadioGroup
                 row
                 aria-labelledby="demo-radio-buttons-group-label"
-                defaultValue="female"
                 name="radio-buttons-group"
+                value={answers[index] || ""}
+                onChange={(e) => handleOptionChange(index, e.target.value)}
               >
                 {question.options.map((option) => (
                   <FormControlLabel
@@ -84,7 +90,6 @@ const MCQTest = (props) => {
                     name={`question-${index}`}
                     value={option}
                     checked={answers[index] === option}
-                    onChange={() => handleOptionChange(index, option)}
                   />
                 ))}
               </RadioGroup>
@@ -99,12 +104,33 @@ const MCQTest = (props) => {
           <h2>
             Your Score: {score} / {props.questions.length}
           </h2>
-          {score == props.questions.length ? (
+          <button onClick={handelBack} className="selectClose btn btn-light">
+            <IoMdClose className="closeIcon" />
+          </button>
+          {score === props.questions.length ? (
             <h6>Excellent</h6>
           ) : score > props.questions.length / 2 ? (
-            <h6>good efforts</h6>
+            <h6>Good efforts</h6>
           ) : (
             <h6>Need more practice</h6>
+          )}
+          {showResults && (
+            <div className="results-container">
+              <h3>Results</h3>
+              {props.questions.map((question, index) => (
+                <div className="result-question" key={index}>
+                  <h4>{question.question}</h4>
+                  <p>
+                    <strong>Correct Answer: </strong>
+                    {question.correctAnswer}
+                  </p>
+                  <p>
+                    <strong>Your Answer: </strong>
+                    {answers[index]}
+                  </p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

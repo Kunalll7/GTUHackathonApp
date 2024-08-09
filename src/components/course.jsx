@@ -1,27 +1,33 @@
 import React, { useContext, useEffect, useState } from "react";
-import SideBar from "./Sidebar";
-import { courseContext } from "../context/courseContext";
 import axios from "axios";
-import MCQTest from "./exam";
+import { Link } from "react-router-dom";
+
+import { courseContext } from "../context/courseContext";
 import { AuthContext } from "../context/authcontext";
 import { topicContext } from "../context/topicContext";
+import { examContext } from "../context/examContext";
 
 import { GoHomeFill } from "react-icons/go";
+import { GoPencil } from "react-icons/go";
+import AddIcon from "@mui/icons-material/Add";
+import { IoChatbubbleSharp } from "react-icons/io5";
+import { IoChatbubbleOutline } from "react-icons/io5";
+
+import SideBar from "./Sidebar";
+import MCQTest from "./exam";
 import Typography from "@mui/material/Typography";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
-import { Link } from "react-router-dom";
 import SubCard from "./cards/subCard";
 import Loading from "./loading";
 import Chip from "@mui/material/Chip";
-import { GoPencil } from "react-icons/go";
 import Button from "@mui/material/Button";
 import Skeleton from "@mui/material/Skeleton";
 import Topic from "./Topic";
 import Fab from "@mui/material/Fab";
-import AddIcon from "@mui/icons-material/Add";
 import Chatbot from "./chatbot";
 
 const Course = () => {
+  
   const [giveExam, setgiveExam] = useState(false);
   const { opt, setopt } = useContext(courseContext);
   const { topicSub, settopicSub } = useContext(topicContext);
@@ -70,7 +76,7 @@ const Course = () => {
     try {
       const response = await axios.post(
         "http://localhost:3000/exam",
-        { topic: opt.course, level: opt.level },
+        { topic: topicSub, level: opt.level },
         { withCredentials: true }
       );
       setquestions(response.data);
@@ -81,9 +87,9 @@ const Course = () => {
   const loadExam = () => {
     setgiveExam(true);
   };
-  const handelFab = () =>{
+  const handelFab = () => {
     setchatBotOpen(!chatBotOpen);
-  }
+  };
 
   useEffect(() => {
     getData();
@@ -124,44 +130,62 @@ const Course = () => {
         </div>
       ) : (
         <>
-          <div className="home-container">
-            <Fab onClick={handelFab} className="chatBotBtn" color="primary" aria-label="add">
-              <AddIcon />
-            </Fab>
-            {chatBotOpen ? <Chatbot /> : ""}
-            <div>
-              <Chip label={opt.level} className={"card-chip " + opt.level} />
+          {giveExam ? (
+            <div className="home-container">
+              {" "}
+              <examContext.Provider value={{giveExam,setgiveExam}}>
+              <MCQTest questions={questions} smallTopic={topicSub} />
+              </examContext.Provider>
             </div>
-            <br />
-            <div
-              className="dangDiv"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
-
-            {/* <div>
-              {links.map((text, index) => (
-                <a target="_blank" className="" href={text}>Resources</a>
-              ))}
-            </div> */}
-          </div>
-          <div className="home-container">
-            {giveExam ? (
-              <MCQTest questions={questions} />
-            ) : (
-              <div className="give-exam">
-                <h2>Show What You've Learned!</h2>{" "}
-                <Button
-                  onClick={loadExam}
-                  className="examBtn"
-                  variant="contained"
-                  disableElevation
-                  endIcon={<GoPencil />}
+          ) : (
+            <>
+              <div className="home-container">
+                <Fab
+                  onClick={handelFab}
+                  className="chatBotBtn"
+                  color="primary"
+                  aria-label="add"
                 >
-                  Start Test
-                </Button>
+                  <IoChatbubbleOutline className="chatIcon" />
+                </Fab>
+                {chatBotOpen ? <Chatbot content={content} className="chatBot" /> : ""}
+                <div>
+                  <Chip
+                    label={opt.level}
+                    className={"card-chip " + opt.level}
+                  />
+                </div>
+                <br />
+                <div
+                  className="dangDiv"
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
+
+                <div className="linksDiv">
+                  {links.map((text, index) => (
+                    <a target="_blank" className="" href={text}>
+                      Resources
+                    </a>
+                  ))}
+                </div>
+
+                <div className="give-exam">
+                  <h2>Show What You've Learned!</h2>{" "}
+                  <Button
+                    onClick={loadExam}
+                    className="examBtn"
+                    variant="contained"
+                    disableElevation
+                    endIcon={<GoPencil />}
+                  
+                  >
+                    Start Test
+                  </Button>
+                </div>
               </div>
-            )}
-          </div>
+            </>
+          )}
+          <div className="home-container"></div>
         </>
       )}
     </>

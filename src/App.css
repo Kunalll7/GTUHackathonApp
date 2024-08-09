@@ -13,6 +13,7 @@ body {
 .card-container {
   display: flex;
   flex-wrap: wrap;
+  width: 105%;
 }
 .radio {
   margin: 10px 5px 0 20px;
@@ -82,16 +83,17 @@ a {
   font-size: 3rem;
 }
 .sidebar .userdiv .icondiv {
-  width: 30%;
+  width: 25%;
 }
 .sidebar .userdiv .namediv {
-  width: 20px;
+  /* width: 20px; */
+  text-align: left;
 }
 .sidebar .userdiv div h4 {
   font-size: 1rem;
 }
 .sidebar .userdiv div h6 {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .breadLink {
@@ -192,6 +194,7 @@ a {
 .examBtn {
   margin: 0 30px !important;
   background-color: black !important;
+
 }
 .selectDiv {
   width: 35% !important;
@@ -280,9 +283,31 @@ a {
 .bot-container {
   position: fixed;
   top: 10%;
-  right: 5%;
+  right: 6%;
   width: 30%;
   height: 80% !important;
   padding: 0 !important;
   border-radius: 12px;
+  z-index: 1;
+}
+.linksDiv{
+  background-color: #eadbc8;
+  padding: 20px;
+  margin: 10px 0;
+  border-radius: 12px;
+}
+.linksDiv a{
+  color: black;
+  margin: 0 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+.chatIcon{
+  font-size: 1.5rem !important;
+}
+
+.body-container{
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  min-height: 80vh;
 }

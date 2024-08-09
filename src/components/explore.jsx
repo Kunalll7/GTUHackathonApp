@@ -5,8 +5,8 @@ import axios from "axios";
 
 import { GoHomeFill } from "react-icons/go";
 
-import Typography from '@mui/material/Typography';
-import Breadcrumbs from '@mui/material/Breadcrumbs';
+import Typography from "@mui/material/Typography";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
 import { Link } from "react-router-dom";
 
 const Explore = () => {
@@ -33,18 +33,23 @@ const Explore = () => {
       </div>
       <div role="presentation" className="home-container">
         <Breadcrumbs aria-label="breadcrumb">
-          <Link className="breadLink" underline="hover" to={"/"} >
-          <GoHomeFill />
+          <Link className="breadLink" underline="hover" to={"/"}>
+            <GoHomeFill />
           </Link>
           <Typography className="breadMain">Explore</Typography>
         </Breadcrumbs>
       </div>
       <div className="home-container">
-        <h2>Explore subjects</h2>
-        <div className="card-container d-flex">
-          {array.map((text, index) => (
-            <SubjectCards key={text} subject={text} />
-          ))}
+        <h1 className="listTitle">
+          Explore courses tailored to your preferences
+        </h1>
+        <br />
+        <div className="body-container">
+          <div className="card-container d-flex">
+            {array.map((text, index) => (
+              <SubjectCards key={text} subject={text} />
+            ))}
+          </div>
         </div>
       </div>
     </>
