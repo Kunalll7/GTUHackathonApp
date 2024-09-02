@@ -13,7 +13,8 @@ const NavBar = () => {
           Student Dashboard
         </Typography>
         <Link to="/opted"><Button color="inherit">Courses</Button></Link>
-        <Button color="inherit">Exams</Button>
+        <Link to="/analysis"> <Button color="inherit">Exams</Button></Link>
+       
       </Toolbar>
     </AppBar>
   );

@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 
 const ProgressTracking = ({ progress }) => {
+  
   return (
     <Card sx={{ minWidth: 275, marginTop: 2 }}>
       <CardContent>

@@ -1,59 +1,83 @@
-import React, { useContext, useState, useEffect } from "react";
-import ExamChart from "./testData";
+import React, { useState, useEffect, useContext } from "react";
+import axios from "axios";
+
+import { AuthContext } from "../context/authcontext";
+import { analysisContext } from "../context/analysisContext";
+
+import Skeleton from "@mui/material/Skeleton";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 import SideBar from "./Sidebar";
 
-import axios from "axios";
-import { AuthContext } from "../context/authcontext";
-import { PieChart } from "@mui/x-charts/PieChart";
+import InsideAnalysis from "./InsideAnalysis";
+import { useNavigate } from "react-router-dom";
 
 const Analysis = () => {
   const { user } = useContext(AuthContext);
-  const [first, setfirst] = useState(0);
-  const [data, setdata] = useState([{ id: 0, value: 9, label: "maths" }]);
-  const getExamAnalysis = async () => {
-    const response = await axios.post(
-      "http://localhost:3000/getExamAnalysis",
-      {
-        user: user.email,
-      },
-      {
-        withCredentials: true,
-      }
-    );
+  const [topics, settopics] = useState([]);
+  const {selectedTopic,setselectedTopic} = useContext(analysisContext);
+  const [showanalysis, setshowanalysis] = useState(false)
+  let navigate = useNavigate()
+  const getsugData = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/getAnalysisTopic",
+        { user: user.email },
+        {
+          withCredentials: true,
+        }
+      );
+      // console.log(response.data);
 
-    for (let index = 0; index < response.data.length; index++) {
-      data.push({
-        id: index,
-        value: response.data[index].score,
-        label: response.data[index].smallTopic,
+      response.data.forEach((data) => {
+        settopics((prevTopics) => {
+          // Create a new Set with previous topics and add the new topic
+          const uniqueTopics = new Set([...prevTopics, data.topic]);
+          // Convert the Set back to an array and return it
+          return Array.from(uniqueTopics);
+        });
       });
+      console.log(topics);
+    } catch (error) {
+      console.log(error);
     }
-    setfirst(1);
-    console.log(data);
   };
   useEffect(() => {
-    getExamAnalysis();
-  }, [first]);
+    getsugData();
+  },[]);
+  const handelSubmit = (text)=>{
+    navigate("/analysis/course");
+    setselectedTopic(text);
+  }
 
   return (
     <>
-      <div className="container-fluid">
-        <div className="container">
-          <SideBar />
-        </div>
+
+      <div>
+        <SideBar/>
       </div>
       <div className="home-container">
-        {/* <h1>{user.subtopic[1].sugTopic}</h1> */}
-        <PieChart
-          series={[
-            {
-              data: data,
-            },
-          ]}
-          width={550}
-          height={200}
-        />
+      <h1 className="listTitle">
+            Track your performance
+          </h1>
+        <div className="listDiv">
+          <List className="listContainer">
+            {topics.map((text, index) => (
+              <ListItem className="listItem" key={text} disablePadding>
+                <ListItemButton onClick={() => handelSubmit(text)}>
+                  <ListItemText primary={text} />
+                  {/* <CheckCircleIcon /> */}
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </div>
+       
       </div>
+
     </>
   );
 };

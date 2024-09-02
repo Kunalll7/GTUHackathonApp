@@ -28,7 +28,7 @@ const Dashboard = () => {
           setprogress([
             { name: "Math", percentage: 75 },
             { name: "Science", percentage: 50 },
-            { name: "History", percentage: 90 },
+            { name: "Programming with java", percentage: 90 },
           ]);
         
          setscores([
@@ -53,6 +53,8 @@ else{
         <Container>
           <NavBar />
           <UserProfile user={userDetails} />
+          <br />
+          <ProgressTracking progress={progress}/>
         </Container>
       );
 }

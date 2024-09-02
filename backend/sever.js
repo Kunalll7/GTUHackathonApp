@@ -10,6 +10,9 @@ import { User } from "../models/user.js";
 import { Subject } from "../models/subject.js";
 import { SubTopic } from "../models/subtopic.js";
 import { SuggestedTopic } from "../models/sugTopic.js";
+import { SmallTopic } from "../models/smallTopic.js";
+import { boardSubjects } from "../models/boardsubject.js";
+import { Coursechallenge } from "../models/coursechallenge.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -107,7 +110,6 @@ app.post("/chatbot", (req, res) => {
     // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const chat = model.startChat({ history: [] });
-    console.log(req.body.content);
 
     const result1 = await chat.sendMessage(
       'you are a teacher and a student is asking you question related to study only answer if the question is related to study otherwise say "I cant answer that" and if you answer only in paragraph and shortest form possible no * included. and you have to answer in refrence to ' +
@@ -115,22 +117,28 @@ app.post("/chatbot", (req, res) => {
         " ignore the tags of html. Ouestion : " +
         prompt
     );
-    console.log(result1.response.text());
     res.send(result1.response.text());
   }
   run();
 });
 
-app.get("/explore", async (req, res) => {
+app.post("/explore", async (req, res) => {
   const subject = await Subject.find({}).catch((err) => {
     console.log(err);
   });
   res.send(subject);
 });
 
+app.post("/exploreBoard", async (req, res) => {
+  const boardsub = await boardSubjects
+    .find({ std: req.body.education })
+    .catch((err) => {
+      console.log(err);
+    });
+  res.send(boardsub);
+});
+
 app.post("/opted", async (req, res) => {
-  console.log("req came");
-  console.log(req.body.user);
   const subTopic = await User.find({ email: req.body.user }, "subtopic").catch(
     (err) => {
       console.log(err);
@@ -155,7 +163,6 @@ app.post("/setoption", async (req, res) => {
     const sIndex = ins.indexOf("[");
     const eIndex = ins.indexOf("]");
     const spelledTopic = ins.substring(sIndex + 1, eIndex);
-    console.log(spelledTopic);
 
     const result0 = await chat.sendMessage(
       ` check if ${spelledTopic}} belongs to subject ${req.body.subject} or not. if belongs then give response [1] and if not then [0] `
@@ -190,6 +197,20 @@ app.post("/setoption", async (req, res) => {
           },
           { new: true }
         );
+        for (let index = 0; index < topics.length; index++) {
+          const smallUser = new SmallTopic({
+            user: user,
+            name: topics[index],
+            subject: req.body.subject,
+            subtopic: spelledTopic,
+            isLoaded: false,
+            completed: false,
+            htmlContent: null,
+            order: index,
+          });
+          smallUser.save();
+        }
+
         res.send("1");
       } catch (err) {
         res.send("0");
@@ -218,7 +239,6 @@ app.post("/yt", async (req, res) => {
   const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&maxResults=${maxResults}&key=${apiKey}`;
   const linkArray = [];
   const run = async () => {
-    console.log("run enabled");
     try {
       const response = await axios.get(url, { withCredentials: true });
       const videos = response.data.items;
@@ -235,25 +255,62 @@ app.post("/yt", async (req, res) => {
   run();
 });
 
-app.post("/course", (req, res) => {
+app.post("/course", async (req, res) => {
   const topic = req.body.topic;
   const level = req.body.level;
   const smallTopic = req.body.smallTopic;
-  console.log(topic);
-  async function run() {
-    // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const chat = model.startChat({ history: [] });
-    const result1 = await chat.sendMessage(
-      "teach me in detail with every necessary topic and with example and practice questions regarding the teached topic " +
-        smallTopic +
-        " " +
-        level +
-        " level.  in response replace ** with h1 tag give every h1 tag classname `dangH1`give classname like react className and replace evey * with p tag. response must not contain any '*' or '**' characters. each content should be in html div tag nothing should be outside html div tag remove ```html and ``` from the response."
-    );
-    res.send(result1.response.text());
+
+  const response = await SmallTopic.find({
+    user: req.body.user,
+    subtopic: topic,
+    subject: req.body.subject,
+    name: smallTopic,
+  });
+
+  if (response[0]) {
+    if (response[0].isLoaded == false) {
+      async function run() {
+        // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const chat = model.startChat({ history: [] });
+        const result1 = await chat.sendMessage(
+          "teach me in detail with every necessary topic and with example and practice questions regarding the teached topic " +
+            smallTopic +
+            " " +
+            level +
+            " level.  in response replace ** with h1 tag give every h1 tag classname `dangH1`give classname like react className and replace evey * with p tag. response must not contain any '*' or '**' characters. each content should be in html div tag nothing should be outside html div tag remove ```html and ``` from the response."
+        );
+        // res.send(result1.response.text());
+
+        const fuser = await SmallTopic.updateOne(
+          {
+            user: req.body.user,
+            subtopic: topic,
+            subject: req.body.subject,
+            name: smallTopic,
+          },
+          { $set: { htmlContent: result1.response.text(), isLoaded: true } }
+        );
+
+        const finduser = await SmallTopic.find({
+          user: req.body.user,
+          subtopic: topic,
+          subject: req.body.subject,
+          name: smallTopic,
+        });
+        res.send(finduser[0].htmlContent);
+      }
+      run();
+    } else {
+      const finduser = await SmallTopic.find({
+        user: req.body.user,
+        subtopic: topic,
+        subject: req.body.subject,
+        name: smallTopic,
+      });
+      res.send(finduser[0].htmlContent);
+    }
   }
-  run();
 });
 
 app.post("/getTopic", async (req, res) => {
@@ -261,7 +318,6 @@ app.post("/getTopic", async (req, res) => {
   const subject = req.body.subject;
   const email = req.body.user;
   let topics = [];
-  console.log({ topic, subject, email });
   const userData = await User.find({
     email: email,
     subtopic: {
@@ -278,8 +334,25 @@ app.post("/getTopic", async (req, res) => {
       }
     }
   }
-  console.log(topics);
-  res.send(topics);
+
+  const topicData = await SmallTopic.find({
+    user: email,
+    subject: subject,
+    subtopic: topic,
+  });
+
+  const topicArray = [];
+
+  topicData.forEach((data) => {
+    const index = data.order;
+    topicArray[index] = {
+      name: data.name,
+      completed: data.completed,
+    };
+  });
+  console.log(topicArray);
+  
+  res.send(topicArray);
 });
 
 app.post("/getsugTopic", async (req, res) => {
@@ -287,7 +360,6 @@ app.post("/getsugTopic", async (req, res) => {
   const subject = req.body.subject;
   const email = req.body.user;
   let topics = [];
-  console.log({ topic, subject, email });
   const userData = await User.find({
     email: email,
     subtopic: {
@@ -304,7 +376,6 @@ app.post("/getsugTopic", async (req, res) => {
       }
     }
   }
-  console.log(topics);
   res.send(topics);
 });
 
@@ -319,7 +390,26 @@ app.post("/exam", (req, res) => {
       `create an mcq test on topic ${topic}. The test should be of 10 questions. the level of exam should be ${level} level. and the response must follow the structure given here and no other text of character should be there in response other that array itself. [{question:"question of mcq",options:[option1,option2,option3,option4],correctAnswer:"correact answer"}]  ` +
         "dont add the ```json and ``` in the response"
     );
-    console.log(result1.response.text());
+    res.send(result1.response.text());
+  }
+  run();
+});
+
+app.post("/coursechallenge", (req, res) => {
+  const examData = {
+    user: req.body.user,
+    subject: req.body.subject,
+    subtopic: req.body.subtopic,
+    topics: req.body.topics,
+  };
+  async function run() {
+    // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const chat = model.startChat({ history: [] });
+    const result1 = await chat.sendMessage(
+      `create an mcq test on subject ${examData.subject}. On topic ${examData.subtopic} and the exam should cover ${examData.topics} all these topics.  The test should be of 15 questions.  and the response must follow the structure given here and no other text of character should be there in response other that array itself. [{question:"question of mcq",options:[option1,option2,option3,option4],correctAnswer:"correact answer"}]  ` +
+        "dont add the ```json and ``` in the response"
+    );
 
     res.send(result1.response.text());
   }
@@ -327,7 +417,6 @@ app.post("/exam", (req, res) => {
 });
 
 app.post("/submitExam", async (req, res) => {
-  console.log("submit exam req came");
   const examData = {
     user: req.body.user,
     subject: req.body.subject,
@@ -338,6 +427,23 @@ app.post("/submitExam", async (req, res) => {
     score: req.body.score,
     smallTopic: req.body.smallTopic,
   };
+
+  if (examData.score >= 8) {
+    try {
+      const examUser = await SmallTopic.updateOne(
+        {
+          user: examData.user,
+          name: examData.smallTopic,
+          subject: examData.subject,
+          subtopic: examData.topic,
+        },
+        { $set: { completed: true } }
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   if (examData.level == "beginner" && examData.score >= 8) {
     try {
       const userFound = await User.find({
@@ -394,8 +500,6 @@ app.post("/submitExam", async (req, res) => {
     }
   }
 
-  console.log(examData.userAnswers);
-  console.log(examData.test.options);
   try {
     const response = await User.updateOne(
       { email: examData.user },
@@ -414,7 +518,6 @@ app.post("/submitExam", async (req, res) => {
       },
       { new: true }
     );
-    console.log(response);
   } catch (err) {
     console.log(err);
   }
@@ -434,10 +537,8 @@ app.post("/submitExam", async (req, res) => {
       const sugTopic = JSON.parse(
         inputString0.substring(startIndex0, endIndex0 + 1)
       );
-      console.log(sugTopic);
       try {
         const response = await User.find({ email: examData.user });
-        console.log(response);
         for (let index = 0; index < response[0].subtopic.length; index++) {
           if (
             response[0].subtopic[index].name == examData.topic &&
@@ -451,13 +552,25 @@ app.post("/submitExam", async (req, res) => {
         for (let i = 0; i < sugTopic.length; i++) {
           const sugresponse = new SuggestedTopic({
             name: sugTopic[i],
+            smallTopic: examData.smallTopic,
             subtopic: examData.topic,
             subject: examData.subject,
             user: examData.user,
+            complete: false,
           });
           sugresponse.save();
-        }
 
+          const smallUser = new SmallTopic({
+            user: examData.user,
+            name: sugTopic[i],
+            subject: examData.subject,
+            subtopic: examData.topic,
+            isLoaded: false,
+            completed: false,
+            htmlContent: null,
+          });
+          smallUser.save();
+        }
       } catch (err) {
         console.log(err);
       }
@@ -466,13 +579,63 @@ app.post("/submitExam", async (req, res) => {
   }
 });
 
+app.post("/submitcourseChallenge", async (req, res) => {
+  const examData = {
+    user: req.body.user,
+    subject: req.body.subject,
+    topic: req.body.topic,
+    test: req.body.test,
+    userAnswers: req.body.userAnswers,
+    score: req.body.score,
+  };
+  try {
+    const response = new Coursechallenge({
+      email: examData.user,
+      subject: examData.subject,
+      topic: examData.topic,
+      test: examData.test,
+      score: examData.score,
+      userAnswers: examData.userAnswers,
+    });
+    response.save();
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 app.post("/getExamData", async (req, res) => {
   try {
     const data = await User.findOne({
       email: req.body.user,
     });
-    console.log(data.exam);
+
     res.send(data.exam);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.post("/getStepper", async (req, res) => {
+  const userData = {
+    user: req.body.user,
+    subtopic: req.body.subtopic,
+    smallTopic: req.body.smallTopic,
+    subject: req.body.subject,
+  };
+
+  try {
+    const data = await SuggestedTopic.find({
+      user: req.body.user,
+      subtopic: req.body.subtopic,
+      smallTopic: req.body.smallTopic,
+      subject: req.body.subject,
+    });
+
+    const suggtopic = [];
+    for (let index = 0; index < data.length; index++) {
+      suggtopic.push(data[index].name);
+    }
+    res.send(suggtopic);
   } catch (err) {
     console.log(err);
   }
@@ -482,13 +645,24 @@ app.post("/getExamAnalysis", async (req, res) => {
   try {
     const user = await User.findOne({
       email: req.body.user,
-    });
-    console.log(user.exam);
+    });x
     res.send(user.exam);
   } catch (err) {
     console.log(err);
   }
 });
+
+app.post("/getAnalysisTopic", async (req, res) => {
+  try {
+    const topics = await User.find({
+      email: req.body.user,
+    });
+    res.send(topics[0].exam);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 
 app.listen(3000, () => {
   console.log(`server running on port 3000`);

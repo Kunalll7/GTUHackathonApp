@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
+
 import { courseContext } from "../context/courseContext";
 import { AuthContext } from "../context/authcontext";
 import { topicContext } from "../context/topicContext";
+
 import Loading from "./loading";
 import Skeleton from "@mui/material/Skeleton";
 import List from "@mui/material/List";
@@ -11,31 +15,33 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
-import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
-import { Link } from "react-router-dom";
 import { GoHomeFill } from "react-icons/go";
+import { GoPencil } from "react-icons/go";
+import { IoBookOutline } from "react-icons/io5";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import Button from "@mui/material/Button";
 
 import SideBar from "./Sidebar";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
+import Coursechallenge from "./coursechallenge";
+import { SuggestedTopic } from "../../models/sugTopic";
 
 const Topic = () => {
   let navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const { topicSub, settopicSub } = useContext(topicContext);
+  const { opt, setopt } = useContext(courseContext);
+  const [questions, setquestions] = useState([]);
   const [arrayTopic, setarrayTopic] = useState([]);
   const [sugarrayTopic, setsugarrayTopic] = useState([]);
-  const { opt, setopt } = useContext(courseContext);
   const [isloading, setisloading] = useState(true);
-  const { user } = useContext(AuthContext);
+  const [first, setfirst] = useState(false);
+  const [takecourcechallenge, settakecourcechallenge] = useState(false);
+  const [isexamloading, setisexamloading] = useState(true);
 
-  const steps = [
-    "Select master blaster campaign settings",
-    "Create an ad group",
-    "Create an ad",
-  ];
   const getData = async () => {
     try {
       const response = await axios.post(
@@ -47,11 +53,10 @@ const Topic = () => {
       );
       for (let index = 0; index < response.data.length; index++) {
         if (!arrayTopic.includes(response.data[index])) {
-          arrayTopic.push(response.data[index]);
+          setarrayTopic((arrayTopic) => [...arrayTopic, response.data[index]]);
         }
       }
-      console.log(arrayTopic);
-      setisloading(false);
+      setfirst(true);
     } catch (error) {
       console.log(error);
     }
@@ -68,15 +73,44 @@ const Topic = () => {
       );
       for (let index = 0; index < response.data.length; index++) {
         if (!sugarrayTopic.includes(response.data[index])) {
-          sugarrayTopic.push(response.data[index]);
+          setsugarrayTopic((sugarrayTopic) => [
+            ...sugarrayTopic,
+            response.data[index],
+          ]);
         }
       }
-      console.log(sugarrayTopic);
       setisloading(false);
     } catch (error) {
       console.log(error);
     }
   };
+
+  const getExam = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/coursechallenge",
+        {
+          topics: arrayTopic,
+          subtopic: opt.course,
+          subject: opt.subject,
+          user: user.email,
+        },
+        { withCredentials: true }
+      );
+      response.data.map((data) => {
+        questions.push(data);
+      });
+      setisexamloading(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const clickexam = () => {
+    settakecourcechallenge(true);
+    getExam();
+  };
+
   useEffect(() => {
     getData();
     getsugData();
@@ -122,16 +156,54 @@ const Topic = () => {
             </h1> */}
           <div className="listDiv">
             <List className="listContainer">
-              {arrayTopic.map((text, index) => (
-                <ListItem className="listItem" key={text} disablePadding>
-                  <ListItemButton onClick={() => handelSubmit(text)}>
-                    <ListItemText primary={text} />
-                    <CheckCircleIcon/>
+              {arrayTopic.map((data, index) => (
+                <ListItem className="listItem" key={data.name} disablePadding>
+                  <ListItemButton onClick={() => handelSubmit(data.name)}>
+                    <ListItemText primary={data.name} />
+                    {data.completed ? <CheckCircleIcon /> : ""}
                   </ListItemButton>
                 </ListItem>
               ))}
             </List>
           </div>
+          <h1 className="listTitle">
+            Explore and select topics tailored to your subjects
+          </h1>
+          <div className="listDiv">
+            <List className="listContainer">
+              {sugarrayTopic.map((text, index) => (
+                <ListItem className="listItem" key={text} disablePadding>
+                  <ListItemButton onClick={() => handelSubmit(text)}>
+                    <ListItemText primary={text} />
+                    {/* <CheckCircleIcon /> */}
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </div>
+
+          {takecourcechallenge ? (
+            <div>
+              {isexamloading ? (
+                <Loading />
+              ) : (
+                <Coursechallenge questions={questions} />
+              )}
+            </div>
+          ) : (
+            <div className="give-exam">
+              <h2>Test your knowledge of the skills in this course.</h2>{" "}
+              <Button
+                className="examBtn"
+                variant="contained"
+                disableElevation
+                endIcon={<IoBookOutline />}
+                onClick={clickexam}
+              >
+                Course challenge
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </>

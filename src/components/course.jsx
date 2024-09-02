@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-
+import { ThemeProvider } from "@mui/material/styles";
 import { courseContext } from "../context/courseContext";
 import { AuthContext } from "../context/authcontext";
 import { topicContext } from "../context/topicContext";
@@ -26,8 +26,22 @@ import Topic from "./Topic";
 import Fab from "@mui/material/Fab";
 import Chatbot from "./chatbot";
 
+import Box from "@mui/material/Box";
+import Stepper from "@mui/material/Stepper";
+import Step from "@mui/material/Step";
+import StepLabel from "@mui/material/StepLabel";
+import { Subject } from "@mui/icons-material";
+
+
+
+const steps = [
+  "Select master blaster campaign settings",
+  "Create an ad group",
+  "Create an ad",
+];
+
 const Course = () => {
-  
+  const { user } = useContext(AuthContext);
   const [giveExam, setgiveExam] = useState(false);
   const { opt, setopt } = useContext(courseContext);
   const { topicSub, settopicSub } = useContext(topicContext);
@@ -36,6 +50,8 @@ const Course = () => {
   const [links, setlinks] = useState([]);
   const [questions, setquestions] = useState([]);
   const [chatBotOpen, setchatBotOpen] = useState(false);
+  const [suggestedTopic, setsuggestedTopic] = useState([]);
+
   const getData = async () => {
     try {
       const response = await axios.post(
@@ -44,6 +60,8 @@ const Course = () => {
           topic: opt.course,
           level: opt.level,
           smallTopic: topicSub,
+          user: user.email,
+          subject: opt.subject,
         },
         {
           withCredentials: true,
@@ -55,7 +73,28 @@ const Course = () => {
       console.log(error);
     }
   };
-
+  const getStepper = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/getStepper",
+        {
+          user: user.email,
+          smallTopic: topicSub,
+          subtopic: opt.course,
+          subject: opt.subject,
+        },
+        { withCredentials: true }
+      );
+      for (let index = 0; index < response.data.length; index++) {
+        suggestedTopic.push(response.data[index]);
+      }
+      console.log("get stepper");
+      console.log(suggestedTopic);
+    } catch (error) {
+      console.log(error);
+    }
+    // console.log(links);
+  };
   const getLinks = async () => {
     try {
       const response = await axios.post(
@@ -63,7 +102,6 @@ const Course = () => {
         { opt: opt.course },
         { withCredentials: true }
       );
-
       for (let index = 0; index < response.data.length; index++) {
         links.push(response.data[index]);
       }
@@ -90,11 +128,11 @@ const Course = () => {
   const handelFab = () => {
     setchatBotOpen(!chatBotOpen);
   };
-
   useEffect(() => {
     getData();
     getLinks();
     getExam();
+    getStepper();
   }, []);
 
   return (
@@ -133,8 +171,8 @@ const Course = () => {
           {giveExam ? (
             <div className="home-container">
               {" "}
-              <examContext.Provider value={{giveExam,setgiveExam}}>
-              <MCQTest questions={questions} smallTopic={topicSub} />
+              <examContext.Provider value={{ giveExam, setgiveExam }}>
+                <MCQTest questions={questions} smallTopic={topicSub} />
               </examContext.Provider>
             </div>
           ) : (
@@ -148,12 +186,27 @@ const Course = () => {
                 >
                   <IoChatbubbleOutline className="chatIcon" />
                 </Fab>
-                {chatBotOpen ? <Chatbot content={content} className="chatBot" /> : ""}
+                {chatBotOpen ? (
+                  <Chatbot content={content} className="chatBot" />
+                ) : (
+                  ""
+                )}
                 <div>
                   <Chip
                     label={opt.level}
                     className={"card-chip " + opt.level}
                   />
+                </div>
+                <div>
+                  <Box sx={{ width: "100%" }}>
+                    <Stepper alternativeLabel>
+                      {suggestedTopic.map((label) => (
+                        <Step key={label}>
+                          <StepLabel>{label}</StepLabel>
+                        </Step>
+                      ))}
+                    </Stepper>
+                  </Box>
                 </div>
                 <br />
                 <div
@@ -177,7 +230,6 @@ const Course = () => {
                     variant="contained"
                     disableElevation
                     endIcon={<GoPencil />}
-                  
                   >
                     Start Test
                   </Button>

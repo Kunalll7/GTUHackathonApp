@@ -194,7 +194,6 @@ a {
 .examBtn {
   margin: 0 30px !important;
   background-color: black !important;
-
 }
 .selectDiv {
   width: 35% !important;
@@ -206,6 +205,7 @@ a {
   background-color: #ced4da;
   z-index: 1;
   position: fixed;
+
 }
 .selectDiv h1 {
   font-size: 2rem;
@@ -290,24 +290,62 @@ a {
   border-radius: 12px;
   z-index: 1;
 }
-.linksDiv{
+.linksDiv {
   background-color: #eadbc8;
   padding: 20px;
   margin: 10px 0;
   border-radius: 12px;
 }
-.linksDiv a{
+.linksDiv a {
   color: black;
   margin: 0 10px;
   padding: 10px;
   border-radius: 8px;
 }
-.chatIcon{
+.chatIcon {
   font-size: 1.5rem !important;
 }
 
-.body-container{
+.body-container {
   background-color: #f8f9fa;
   border-radius: 12px;
   min-height: 80vh;
+}
+@media screen and (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .home-container{
+    margin-left: 0;
+  }
+}
+
+.result-question{
+  padding: 20px;
+  margin-bottom: 15px;
+  background-color: #ced4da;
+  border-radius: 12px;
+}
+.result-question h4{
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+.result-question p {
+  margin: 0 0 5px 0;
+}
+.green{
+  color: green;
+}
+.red{
+  color: red;
+}
+.barGraph{
+ text-align: center;
+}
+.barGraph .paperPadding{
+  padding: 20px 30px;
+  width: 1000px !important;
+}
+.ScoreCard :first-child{
+  padding: 20px;
 }

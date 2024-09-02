@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import SubjectCards from "./cards/subjectCards";
 import SideBar from "./Sidebar";
 import axios from "axios";
@@ -8,23 +8,43 @@ import { GoHomeFill } from "react-icons/go";
 import Typography from "@mui/material/Typography";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../context/authcontext";
 
 const Explore = () => {
   const [array, setarray] = useState([]);
   const [first, setfirst] = useState(0);
-
-  useEffect(() => {
-    const firstapp = async () => {
-      const response = await axios.get("http://localhost:3000/explore", {
-        withCredentials: true,
-      });
+  const { user } = useContext(AuthContext);
+const firstapp = async () => {
+     if (user.board == false) {
+      const response = await axios.post(
+        "http://localhost:3000/explore",
+        { user: user.email, board: user.board,education:user.education },
+        {
+          withCredentials: true,
+        }
+      );
       for (let index = 0; index < response.data.length; index++) {
         array.push(response.data[index].name);
         setfirst(1);
       }
+     }
+     else{
+      const response = await axios.post(
+        "http://localhost:3000/exploreBoard",
+        { user: user.email, board: user.board,education:user.education },
+        {
+          withCredentials: true,
+        }
+      );
+      for (let index = 0; index < response.data.length; index++) {
+        array.push(response.data[index].name);
+        setfirst(1);
+      }
+     }
     };
+  useEffect(() => {
     firstapp();
-  }, [array]);
+  }, );
 
   return (
     <>
